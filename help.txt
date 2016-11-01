@@ -1,0 +1,8 @@
+Hi there!
+I can help you create a poll.
+
+Use these commands to do stuff:
+/help - show help
+/new - create a new poll
+/delete - delete a poll
+/results - show the results for a poll
