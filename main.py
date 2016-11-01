@@ -38,6 +38,7 @@ STATE_RESULT_CHOOSE_TYPE = 'RESULT_CHOOSE_TYPE'
 RESULT_TYPE_LIST = 'list names'
 RESULT_TYPE_NUMBERS = 'only count votes'
 RESULT_TYPE_GRID = 'grid (like a doodle)'
+RESULT_TYPE_BARS = 'bars'
 
 # ================================
 
@@ -419,7 +420,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     if poll:
                         user.activePoll = poll_id
                         user.activeState = STATE_RESULT_CHOOSE_TYPE
-                        reply('How should the results be formatted?', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"]], "resize_keyboard": true}')
+                        reply('How should the results be formatted?', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"],["'+RESULT_TYPE_BARS+'"]], "resize_keyboard": true}')
                         
                     else:
                         reply('No poll with that id was found.')
@@ -525,6 +526,52 @@ class WebhookHandler(webapp2.RequestHandler):
                     output = StringIO.StringIO()
                     img.save(output, 'PNG')
                     send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))    
+
+                elif text == RESULT_TYPE_BARS:
+                    # bar chart
+                    BAR_HEIGHT = 80
+                    BAR_WIDTH = 400
+                    FONT_SIZE = 40
+                    SPACE = 10
+                    font = ImageFont.truetype("Symbola.ttf", size=FONT_SIZE)
+
+                    # organize data
+                    poll = user.get_active_poll()
+                    answers = poll['answers']
+                    answered = []
+
+                    for i in range(len(answers)):
+                        answered.append(0)
+
+                    for user_answer in poll['answered']:
+                        for i in range(len(answers)):
+                            chosen_answers = user_answer['chosen_answers']
+                            if chosen_answers >> i & 1:
+                                answered[i] += 1
+
+                    # find longest answer in pixels
+                    longest_answer = 0
+                    for answer in answers:
+                        l = font.getsize(answer)[0]
+                        if longest_answer < l:
+                            longest_answer = l
+
+                    img = Image.new("RGB", (longest_answer + BAR_WIDTH + 3*SPACE, len(answers)*(BAR_HEIGHT + SPACE) + SPACE), "#FFF")
+                    draw = ImageDraw.Draw(img)
+
+                    # draw bars
+                    for i in range(len(answers)):
+                        draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i],fill = "#000", font=font)
+                        col = "#72d353"
+                        if answered[i] == max(answered):
+                            # special color for largest value
+                            col = "#3f6de0"
+                        draw.rectangle((longest_answer + SPACE*2, i*(BAR_HEIGHT + SPACE) +SPACE, BAR_WIDTH * answered[i] + longest_answer + SPACE*2, (i+1) * BAR_HEIGHT + (i+1)*SPACE), fill = col)
+
+                    # send image
+                    output = StringIO.StringIO()
+                    img.save(output, 'PNG')
+                    send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))  
 
                 else:
                     # just show number of votes
