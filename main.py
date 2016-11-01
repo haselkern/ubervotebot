@@ -1,3 +1,10 @@
+###############################################################
+# ubervotebot is a bot made for Telegram and was written by
+# Lars Martens. It helps you manage polls and show the
+# results in a variety of formats. This project was built
+# ontop of @yukuku's telebot project.
+###############################################################
+
 import StringIO
 import json
 import logging
