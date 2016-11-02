@@ -547,15 +547,21 @@ class WebhookHandler(webapp2.RequestHandler):
                     answers = poll['answers']
                     answered = []
 
+
+                    # initialise answered to an array of 0s
                     for i in range(len(answers)):
                         answered.append(0)
 
+                    # count votes
                     for user_answer in poll['answered']:
                         for i in range(len(answers)):
                             chosen_answers = user_answer['chosen_answers']
                             if chosen_answers >> i & 1:
                                 answered[i] += 1
 
+                    # normalize answered
+                    answered = list(map(lambda x: float(x)/max(answered), answered))
+                    
                     # find longest answer in pixels
                     longest_answer = 0
                     for answer in answers:
@@ -568,7 +574,7 @@ class WebhookHandler(webapp2.RequestHandler):
 
                     # draw bars
                     for i in range(len(answers)):
-                        draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i],fill = "#000", font=font)
+                        draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i], fill = "#000", font=font)
                         col = "#72d353"
                         if answered[i] == max(answered):
                             # special color for largest value
