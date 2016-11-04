@@ -373,6 +373,13 @@ class WebhookHandler(webapp2.RequestHandler):
                     'disable_web_page_preview': 'true',
                     'reply_markup': keyboard
                 })
+
+            def send_action_photo():
+                '''Sets status "sending picture" for this bot.'''
+                telegram_method('sendChatAction', {
+                    'chat_id': str(chat_id),
+                    'action' : 'upload_photo'
+                })
             
             
             # get User
@@ -454,6 +461,9 @@ class WebhookHandler(webapp2.RequestHandler):
                     reply(msg)
 
                 elif text == RESULT_TYPE_GRID:
+
+                    send_action_photo()
+
                     # create grid of results (like on doodle.com)
                     img_checked = Image.open('checked.png', 'r')
                     img_unchecked = Image.open('unchecked.png', 'r')
@@ -535,6 +545,9 @@ class WebhookHandler(webapp2.RequestHandler):
                     send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))    
 
                 elif text == RESULT_TYPE_BARS:
+
+                    send_action_photo()
+
                     # bar chart
                     BAR_HEIGHT = 80
                     BAR_WIDTH = 400
