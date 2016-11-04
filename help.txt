@@ -6,3 +6,4 @@ Use these commands to do stuff:
 /new - create a new poll
 /delete - delete a poll
 /results - show the results for a poll
+/cancel - cancels the current operation

@@ -111,6 +111,10 @@ class User(ndb.Model):
     def get_active_poll(self):
         return self.get_poll(self.activePoll)
 
+    def delete_active_poll(self):
+        self.polls_arr.remove(self.get_active_poll())
+        self.activePoll = None
+
     def get_active_poll_answers(self):
         return self.get_active_poll()['answers']
     
@@ -428,6 +432,8 @@ class WebhookHandler(webapp2.RequestHandler):
                 if text == '/cancel':
                     user.activeState = STATE_DEFAULT
                     reply('Okay, no results will be shown.')
+                elif text.startswith('/'):
+                    reply('Unrecognized command.')
                 else:
                     poll_id = text[:5]
                     poll = user.get_poll(poll_id)
@@ -441,7 +447,11 @@ class WebhookHandler(webapp2.RequestHandler):
                         user.activeState = STATE_DEFAULT
             
             elif user.activeState == STATE_RESULT_CHOOSE_TYPE:
-                if text == RESULT_TYPE_LIST:
+                if text == '/cancel':
+                    reply('Okay, no results will be shown.')
+                    user.activeState = STATE_DEFAULT
+
+                elif text == RESULT_TYPE_LIST:
                     # list names of voters
                     poll = user.get_active_poll()
 
@@ -641,7 +651,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 if text == 'yes':
                     poll = user.get_active_poll()
                     title = poll['question']
-                    user.polls_arr.remove(poll)
+                    user.delete_active_poll()
                     reply('Deleted "'+title+'"')
                 else:
                     reply('Nothing was deleted.')
@@ -650,17 +660,28 @@ class WebhookHandler(webapp2.RequestHandler):
                 user.activeState = STATE_DEFAULT
 
             elif user.activeState == STATE_CREATE_POLL_CHOOSE_QUESTION:
-                # new poll
-                poll = user.new_poll()
-                poll['question'] = text.replace('"', '\'') # replace " with ' to prevent bad URLs. This is not nice, but it works
-                poll['question'] = poll['question']
-                user.activeState = STATE_CREATE_POLL_ADD_ANSWER
-                user.activePoll = poll['id']
-                reply('Now send the first answer to that question.')
+
+                if text == '/cancel':
+                    user.delete_active_poll()
+                    reply('Cancelled creating a poll.')
+                    user.activeState = STATE_DEFAULT
+                else:
+                    # new poll
+                    poll = user.new_poll()
+                    poll['question'] = text.replace('"', '\'') # replace " with ' to prevent bad URLs. This is not nice, but it works
+                    poll['question'] = poll['question']
+                    user.activeState = STATE_CREATE_POLL_ADD_ANSWER
+                    user.activePoll = poll['id']
+                    reply('Now send the first answer to that question.')
             
             elif user.activeState == STATE_CREATE_POLL_ADD_ANSWER:
 
-                if text == '/done':
+                if text == '/cancel':
+                    user.delete_active_poll()
+                    reply('Cancelled creating a poll.')
+                    user.activeState = STATE_DEFAULT
+
+                elif text == '/done':
                     poll = user.get_active_poll()
 
                     if len(poll['answers']) > 0:
@@ -688,28 +709,34 @@ class WebhookHandler(webapp2.RequestHandler):
                     reply('Cool, now send me another answer or type /done when you\'re finished.')
             
             elif user.activeState == STATE_CREATE_POLL_CHOOSE_NUMBER_OF_ANSWERS:
-                n = -1
-                # try to parse number
-                try:
-                    n = int(text)
-                except Exception, e:
-                    logging.exception(e)
 
-                max_possible = len(user.get_active_poll_answers())
-
-                if n >= 1 and n <= max_possible:
-                    poll = user.get_active_poll()
-                    poll['max_answers'] = n
-                    reply('That\'s it! Your poll is now ready:')
-
-                    # print poll with share button
-                    reply(poll['question'], keyboard=get_poll_inline_keyboard(poll, True))
-
-
+                if text == '/cancel':
+                    user.delete_active_poll()
+                    reply('Cancelled creating a poll.')
                     user.activeState = STATE_DEFAULT
-                    user.activePoll = None
                 else:
-                    reply('Please enter a number between 1 and '+str(max_possible)+'!')
+                    n = -1
+                    # try to parse number
+                    try:
+                        n = int(text)
+                    except Exception, e:
+                        logging.exception(e)
+
+                    max_possible = len(user.get_active_poll_answers())
+
+                    if n >= 1 and n <= max_possible:
+                        poll = user.get_active_poll()
+                        poll['max_answers'] = n
+                        reply('That\'s it! Your poll is now ready:')
+
+                        # print poll with share button
+                        reply(poll['question'], keyboard=get_poll_inline_keyboard(poll, True))
+
+
+                        user.activeState = STATE_DEFAULT
+                        user.activePoll = None
+                    else:
+                        reply('Please enter a number between 1 and '+str(max_possible)+'!')
 
             else:
                 reply('Whoops, I messed up. Please try again.\n(Invalid state: ' + str(user.activeState) + ')')
