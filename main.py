@@ -475,12 +475,12 @@ class WebhookHandler(webapp2.RequestHandler):
                     send_action_photo()
 
                     # create grid of results (like on doodle.com)
-                    img_checked = Image.open('checked.png', 'r')
-                    img_unchecked = Image.open('unchecked.png', 'r')
+                    img_checked = Image.open('gfx/checked.png', 'r')
+                    img_unchecked = Image.open('gfx/unchecked.png', 'r')
                     CELL_SIZE = max(img_checked.size)
                     FONT_SIZE = CELL_SIZE//2
                     SPACE = 20
-                    font = ImageFont.truetype("Symbola.ttf", size=FONT_SIZE)
+                    font = ImageFont.truetype('gfx/Symbola.ttf', size=FONT_SIZE)
 
                     # organize data
                     poll = user.get_active_poll()
@@ -563,7 +563,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     BAR_WIDTH = 400
                     FONT_SIZE = 40
                     SPACE = 10
-                    font = ImageFont.truetype("Symbola.ttf", size=FONT_SIZE)
+                    font = ImageFont.truetype('gfx/Symbola.ttf', size=FONT_SIZE)
 
                     # organize data
                     poll = user.get_active_poll()
