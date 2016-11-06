@@ -22,7 +22,7 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 import webapp2
 
-with open("TOKEN") as f:
+with open('TOKEN') as f:
     TOKEN = f.read()
 
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
@@ -71,14 +71,14 @@ class User(ndb.Model):
         Use id alternatively'''
 
         if user_obj:
-            u = cls.query().filter(ndb.GenericProperty("id") == user_obj.get('id')).get()
+            u = cls.query().filter(ndb.GenericProperty('id') == user_obj.get('id')).get()
             if not u:
                 u = User(name=user_obj.get('first_name'), id=user_obj.get('id'), surname=user_obj.get('surname'))
             u.init()
             return u
 
         elif id:
-            u = cls.query().filter(ndb.GenericProperty("id") == id).get()
+            u = cls.query().filter(ndb.GenericProperty('id') == id).get()
             if u:
                 u.init()
                 return u
@@ -91,7 +91,7 @@ class User(ndb.Model):
         while len(o) < 5:
             c = random.randrange(ord('A'), ord('Z') + 1)
             o.append(chr(c))
-        return "".join(o)
+        return ''.join(o)
     
     def create_valid_poll_id(self):
         '''Generates poll ids until we have found a valid one'''
@@ -122,7 +122,7 @@ class User(ndb.Model):
         '''Pretty print name'''
         o = self.name
         if self.surname:
-            o += " " + self.surname
+            o += ' ' + self.surname
         return o
 
     # Create and store a new poll
@@ -181,7 +181,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 for i in range(len(poll['answers'])):
 
                     answer = poll['answers'][i]
-                    data = str(poll['owner']) + ";" + str(poll['id']) + ";" + str(i)
+                    data = str(poll['owner']) + ';' + str(poll['id']) + ';' + str(i)
 
                     # Count how often answer at index i was voted for 
                     voted = 0
@@ -232,7 +232,7 @@ class WebhookHandler(webapp2.RequestHandler):
 
 
         # HANDLE INLINE QUERY
-        if "inline_query" in body:
+        if 'inline_query' in body:
             query = body['inline_query']
             inline_query_id = query['id']
 
@@ -293,7 +293,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     infos['message_id'] = str(message_id)
                 telegram_method('editMessageText', infos)
 
-            data = data.split(";")
+            data = data.split(';')
             data[0] = int(data[0])
             data[2] = int(data[2])
             try:
@@ -425,7 +425,7 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 else:
                     # show help
-                    with open("help.txt", "r") as f:
+                    with open('help.txt', 'r') as f:
                         reply(f.read())
             
             elif user.activeState == STATE_RESULT_CHOOSE_POLL:
@@ -518,20 +518,20 @@ class WebhookHandler(webapp2.RequestHandler):
                         longest_answer + len(names)*CELL_SIZE + 3*SPACE
                         )
                     # we need a square image for nicer rotating, image will get cropped later
-                    img = Image.new("RGB", (max(dimen), max(dimen)), "#FFF")
+                    img = Image.new('RGB', (max(dimen), max(dimen)), '#FFF')
                     draw = ImageDraw.Draw(img)
 
                     # draw names right aligned and vertically centered
                     for i in range(len(names)):
                         l = font.getsize(names[i])[0]
-                        draw.text((SPACE + (longest_name - l), longest_answer + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), names[i], "#000", font)
+                        draw.text((SPACE + (longest_name - l), longest_answer + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), names[i], '#000', font)
 
                     # draw answers rotated
                     img = img.rotate(-90)
                     draw = ImageDraw.Draw(img)
 
                     for i in range(len(answers)):
-                        draw.text((img.size[0] - longest_answer - SPACE, longest_name + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), answers[i], "#000", font)
+                        draw.text((img.size[0] - longest_answer - SPACE, longest_name + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), answers[i], '#000', font)
 
                     img = img.rotate(90)
                     draw = ImageDraw.Draw(img)
@@ -592,16 +592,16 @@ class WebhookHandler(webapp2.RequestHandler):
                         if longest_answer < l:
                             longest_answer = l
 
-                    img = Image.new("RGB", (longest_answer + BAR_WIDTH + 3*SPACE, len(answers)*(BAR_HEIGHT + SPACE) + SPACE), "#FFF")
+                    img = Image.new('RGB', (longest_answer + BAR_WIDTH + 3*SPACE, len(answers)*(BAR_HEIGHT + SPACE) + SPACE), '#FFF')
                     draw = ImageDraw.Draw(img)
 
                     # draw bars
                     for i in range(len(answers)):
-                        draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i], fill = "#000", font=font)
-                        col = "#72d353"
+                        draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i], fill = '#000', font=font)
+                        col = '#72d353'
                         if answered[i] == max(answered):
                             # special color for largest value
-                            col = "#3f6de0"
+                            col = '#3f6de0'
                         draw.rectangle((longest_answer + SPACE*2, i*(BAR_HEIGHT + SPACE) +SPACE, BAR_WIDTH * answered[i] + longest_answer + SPACE*2, (i+1) * BAR_HEIGHT + (i+1)*SPACE), fill = col)
 
                     # send image
