@@ -112,7 +112,8 @@ class User(ndb.Model):
         return self.get_poll(self.activePoll)
 
     def delete_active_poll(self):
-        self.polls_arr.remove(self.get_active_poll())
+        if self.activePoll:
+            self.polls_arr.remove(self.get_active_poll())
         self.activePoll = None
 
     def get_active_poll_answers(self):
