@@ -448,6 +448,11 @@ class WebhookHandler(webapp2.RequestHandler):
                         user.activeState = STATE_DEFAULT
             
             elif user.activeState == STATE_RESULT_CHOOSE_TYPE:
+
+                def can_create_image_with_dimensions(dimensions):
+                    '''The image has to use less than 128MB in memory.'''
+                    return max(dimensions) ** 2 * 4 / (1024**2) < 128
+
                 if text == '/cancel':
                     reply('Okay, no results will be shown.')
                     user.activeState = STATE_DEFAULT
@@ -474,7 +479,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 elif text == RESULT_TYPE_GRID:
 
                     send_action_photo()
-
+                    
                     # create grid of results (like on doodle.com)
                     img_checked = Image.open('gfx/checked.png', 'r')
                     img_unchecked = Image.open('gfx/unchecked.png', 'r')
@@ -518,42 +523,49 @@ class WebhookHandler(webapp2.RequestHandler):
                         longest_name + len(answers)*CELL_SIZE + 3*SPACE,
                         longest_answer + len(names)*CELL_SIZE + 3*SPACE
                         )
-                    # we need a square image for nicer rotating, image will get cropped later
-                    img = Image.new('RGB', (max(dimen), max(dimen)), '#FFF')
-                    draw = ImageDraw.Draw(img)
 
-                    # draw names right aligned and vertically centered
-                    for i in range(len(names)):
-                        l = font.getsize(names[i])[0]
-                        draw.text((SPACE + (longest_name - l), longest_answer + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), names[i], '#000', font)
+                    # Check for image size
+                    if can_create_image_with_dimensions(dimen):
 
-                    # draw answers rotated
-                    img = img.rotate(-90)
-                    draw = ImageDraw.Draw(img)
+                        # we need a square image for nicer rotating, image will get cropped later
+                        img = Image.new('RGB', (max(dimen), max(dimen)), '#FFF')
+                        draw = ImageDraw.Draw(img)
 
-                    for i in range(len(answers)):
-                        draw.text((img.size[0] - longest_answer - SPACE, longest_name + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), answers[i], '#000', font)
+                        # draw names right aligned and vertically centered
+                        for i in range(len(names)):
+                            l = font.getsize(names[i])[0]
+                            draw.text((SPACE + (longest_name - l), longest_answer + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), names[i], '#000', font)
 
-                    img = img.rotate(90)
-                    draw = ImageDraw.Draw(img)
+                        # draw answers rotated
+                        img = img.rotate(-90)
+                        draw = ImageDraw.Draw(img)
 
-                    # draw grid
-                    for x in range(len(answers)):
-                        for y in range(len(names)):
-                            # draw image for checked/unchecked
-                            offset = (x * CELL_SIZE + longest_name + SPACE*2, y * CELL_SIZE + longest_answer + SPACE*2)
-                            if answered[y][x]:
-                                img.paste(img_checked, offset)
-                            else:
-                                img.paste(img_unchecked, offset)
+                        for i in range(len(answers)):
+                            draw.text((img.size[0] - longest_answer - SPACE, longest_name + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), answers[i], '#000', font)
 
-                    # crop image
-                    img = img.crop((0, 0, dimen[0], dimen[1]))
+                        img = img.rotate(90)
+                        draw = ImageDraw.Draw(img)
 
-                    # send image
-                    output = StringIO.StringIO()
-                    img.save(output, 'PNG')
-                    send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))    
+                        # draw grid
+                        for x in range(len(answers)):
+                            for y in range(len(names)):
+                                # draw image for checked/unchecked
+                                offset = (x * CELL_SIZE + longest_name + SPACE*2, y * CELL_SIZE + longest_answer + SPACE*2)
+                                if answered[y][x]:
+                                    img.paste(img_checked, offset)
+                                else:
+                                    img.paste(img_unchecked, offset)
+
+                        # crop image
+                        img = img.crop((0, 0, dimen[0], dimen[1]))
+
+                        # send image
+                        output = StringIO.StringIO()
+                        img.save(output, 'PNG')
+                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))
+                    else:
+                        reply('The image would be too big to send you. Please choose a different result format.')
+
 
                 elif text == RESULT_TYPE_BARS:
 
@@ -584,7 +596,7 @@ class WebhookHandler(webapp2.RequestHandler):
                                 answered[i] += 1
 
                     # normalize answered
-                    answered = list(map(lambda x: float(x)/max(answered), answered))
+                    answered = list(map(lambda x: float(x)/max(answered + [1,]), answered))
                     
                     # find longest answer in pixels
                     longest_answer = 0
@@ -593,22 +605,29 @@ class WebhookHandler(webapp2.RequestHandler):
                         if longest_answer < l:
                             longest_answer = l
 
-                    img = Image.new('RGB', (longest_answer + BAR_WIDTH + 3*SPACE, len(answers)*(BAR_HEIGHT + SPACE) + SPACE), '#FFF')
-                    draw = ImageDraw.Draw(img)
+                    dimen = (longest_answer + BAR_WIDTH + 3*SPACE, len(answers)*(BAR_HEIGHT + SPACE) + SPACE)
 
-                    # draw bars
-                    for i in range(len(answers)):
-                        draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i], fill = '#000', font=font)
-                        col = '#72d353'
-                        if answered[i] == max(answered):
-                            # special color for largest value
-                            col = '#3f6de0'
-                        draw.rectangle((longest_answer + SPACE*2, i*(BAR_HEIGHT + SPACE) +SPACE, BAR_WIDTH * answered[i] + longest_answer + SPACE*2, (i+1) * BAR_HEIGHT + (i+1)*SPACE), fill = col)
+                    # Check for image size
+                    if can_create_image_with_dimensions(dimen):
 
-                    # send image
-                    output = StringIO.StringIO()
-                    img.save(output, 'PNG')
-                    send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))  
+                        img = Image.new('RGB', dimen, '#FFF')
+                        draw = ImageDraw.Draw(img)
+
+                        # draw bars
+                        for i in range(len(answers)):
+                            draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i], fill = '#000', font=font)
+                            col = '#72d353'
+                            if answered[i] == max(answered):
+                                # special color for largest value
+                                col = '#3f6de0'
+                            draw.rectangle((longest_answer + SPACE*2, i*(BAR_HEIGHT + SPACE) +SPACE, BAR_WIDTH * answered[i] + longest_answer + SPACE*2, (i+1) * BAR_HEIGHT + (i+1)*SPACE), fill = col)
+
+                        # send image
+                        output = StringIO.StringIO()
+                        img.save(output, 'PNG')
+                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))
+                    else:
+                        reply('The image would be too big to send you. Please choose a different result format.')
 
                 else:
                     # just show number of votes
