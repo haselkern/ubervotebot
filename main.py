@@ -450,8 +450,9 @@ class WebhookHandler(webapp2.RequestHandler):
             elif user.activeState == STATE_RESULT_CHOOSE_TYPE:
 
                 def can_create_image_with_dimensions(dimensions):
-                    '''The image has to use less than 128MB in memory.'''
-                    return max(dimensions) ** 2 * 4 / (1024**2) < 128
+                    '''The image has to use less than 128MB in memory.
+                    Check for a bit more, just to be safe. '''
+                    return max(dimensions) ** 2 * 4 / (1000**2) < 100
 
                 if text == '/cancel':
                     reply('Okay, no results will be shown.')
