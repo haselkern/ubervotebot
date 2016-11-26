@@ -244,7 +244,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     'switch_pm_parameter': 'new'
                 }
                 if poll:
-                    infos['results'] = '[{"type": "article", "id": "'+poll.get('id')+'", "title": "Send poll: '+poll['question']+'", "input_message_content": {"message_text": "'+poll['question']+'"}, "reply_markup": '+get_poll_inline_keyboard(poll)+'}]'
+                    infos['results'] = '[{"type": "article", "id": "'+poll.get('id')+'", "title": "Click here to send poll", "description": "'+poll['question']+'", "thumb_url": "https://raw.githubusercontent.com/haselkern/ubervotebot/master/gfx/botpic.png", "input_message_content": {"message_text": "'+poll['question']+'"}, "reply_markup": '+get_poll_inline_keyboard(poll)+'}]'
                 telegram_method('answerInlineQuery', infos)
 
             # find User
