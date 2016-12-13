@@ -623,6 +623,23 @@ class WebhookHandler(webapp2.RequestHandler):
                                 col = '#3f6de0'
                             draw.rectangle((longest_answer + SPACE*2, i*(BAR_HEIGHT + SPACE) +SPACE, BAR_WIDTH * answered[i] + longest_answer + SPACE*2, (i+1) * BAR_HEIGHT + (i+1)*SPACE), fill = col)
 
+                            # draw text with percentage on bar
+                            perc_text = str(int(round(answered[i] / sum(answered) * 100))) + '%'
+                            perc_width = font.getsize(perc_text)[0]
+
+                            # offset percentage text if it doesn't fit in the bar
+                            perc_offset = 0
+                            perc_color = '#fff'
+                            if perc_width + 2*SPACE > BAR_WIDTH * answered[i]:
+                                perc_offset = BAR_WIDTH * answered[i]
+                                perc_color = '#000'
+
+                            draw.text((longest_answer + SPACE*3 + perc_offset, i*(BAR_HEIGHT + SPACE) +SPACE*3),
+                                perc_text,
+                                fill = perc_color,
+                                font = font
+                                )
+
                         # send image
                         output = StringIO.StringIO()
                         img.save(output, 'PNG')
