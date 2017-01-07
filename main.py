@@ -439,9 +439,16 @@ class WebhookHandler(webapp2.RequestHandler):
                     poll_id = text[:5]
                     poll = user.get_poll(poll_id)
                     if poll:
-                        user.activePoll = poll_id
-                        user.activeState = STATE_RESULT_CHOOSE_TYPE
-                        reply('How should the results be formatted?', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"],["'+RESULT_TYPE_BARS+'"]], "resize_keyboard": true}')
+                        # Has the poll been answered?
+                        if len(poll['answered']) > 0:
+                            user.activePoll = poll_id
+                            user.activeState = STATE_RESULT_CHOOSE_TYPE
+                            reply('How should the results be formatted?', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"],["'+RESULT_TYPE_BARS+'"]], "resize_keyboard": true}')
+                        else:
+                            # No people have answered that poll, no reason for results.
+                            user.activePoll = None
+                            user.activeState = STATE_DEFAULT
+                            reply('No one has answered this poll yet.')
                         
                     else:
                         reply('No poll with that id was found.')
