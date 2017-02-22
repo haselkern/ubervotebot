@@ -206,10 +206,14 @@ class WebhookHandler(webapp2.RequestHandler):
             for key in keyvalues:
                 encoded[key] = keyvalues[key].encode('utf-8')
 
-            resp = urllib2.urlopen(BASE_URL + name, urllib.urlencode(encoded)).read()
+            try:
+                resp = urllib2.urlopen(BASE_URL + name, urllib.urlencode(encoded)).read()
 
-            logging.info(name+' response:')
-            logging.info(resp)
+                logging.info(name+' response:')
+                logging.info(resp)
+                
+            except Exception, e:
+                logging.warn(e)
         
         def send_image(img, chat_id, caption=''):
             resp = multipart.post_multipart(BASE_URL + 'sendPhoto', [
@@ -765,7 +769,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     try:
                         n = int(text)
                     except Exception, e:
-                        logging.exception(e)
+                        logging.warn(e)
 
                     max_possible = len(user.get_active_poll_answers())
 
