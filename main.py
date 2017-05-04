@@ -794,10 +794,24 @@ class WebhookHandler(webapp2.RequestHandler):
             # save everything
             user.serialize()
 
+# Count users
+class CounterHandler(webapp2.RequestHandler):
+    def get(self):
+        self.response.content_type = "text/plain"
+        users = User.query()
+        withPoll = 0
+        total = 0
+        for u in users:
+            u.init()
+            if len(u.polls_arr) > 0:
+                withPoll += 1
+            total += 1
+        self.response.write("Total: " + str(total) + "\nWith poll: " + str(withPoll))
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),
     ('/updates', GetUpdatesHandler),
     ('/set_webhook', SetWebhookHandler),
     ('/webhook', WebhookHandler),
+    ('/count', CounterHandler),
 ], debug=True)
