@@ -362,7 +362,8 @@ class WebhookHandler(webapp2.RequestHandler):
             try:
                 message = body['message']
             except:
-                message = body['edited_message']
+                logging.error('No message found on body: ' + str(body))
+                return
 
             message_id = message.get('message_id')
             date = message.get('date')
